@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
             isBound.value = true
         }
 
+        // This is only called if the service crashed or the system killed it.
         override fun onServiceDisconnected(name: ComponentName?) {
             isBound.value = false
         }
@@ -66,27 +67,42 @@ class MainActivity : ComponentActivity() {
                                             progress = it
                                         }
                                     }
+                                }else {
+                                    Toast.makeText(this@MainActivity,
+                                        "Service not bound", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         ) {
                             Text(text = "Start Download")
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        LinearProgressIndicator( progress = progress)
+                        // Show progress bar
+                        LinearProgressIndicator(
+                            backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0.3f),
+                            progress = progress
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Cancel Download
+                        Button(
+                            onClick = {
+                                if (isBound) {
+                                    service.cancelDownload()
+                                }else {
+                                    Toast.makeText(this@MainActivity,
+                                        "Service not bound", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        ) {
+                            Text(text = "Cancel Download")
+                        }
                         Spacer(modifier = Modifier.height(64.dp))
 
                         // start service and bind
                         Button(
                             onClick = {
-                                if (!isBound) {
-                                    Intent(this@MainActivity, BoundService::class.java).also { intent ->
-                                        bindService(intent, connection, BIND_AUTO_CREATE)
-                                    }
-                                    this@MainActivity.isBound.value = true
-                                } else {
-                                    Toast.makeText(this@MainActivity, "Service already bound", Toast.LENGTH_SHORT).show()
-                                }
+                                onStartService()
                             }
                         ) {
                             Text(text = "Start Service")
@@ -96,14 +112,7 @@ class MainActivity : ComponentActivity() {
                         // Stop service and unbind
                         Button(
                             onClick = {
-                                if (isBound) {
-                                    service.cancelDownload()
-                                    stopService(Intent(this@MainActivity, BoundService::class.java))
-                                    unbindService(connection)
-                                    this@MainActivity.isBound.value = false
-                                } else {
-                                    Toast.makeText(this@MainActivity, "Service is not bound", Toast.LENGTH_SHORT).show()
-                                }
+                                onStopService()
                             }
                         ) {
                             Text(text = "Stop Service")
@@ -123,17 +132,33 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (isBound.value == false) {
-            Intent(this, BoundService::class.java).also { intent ->
-                bindService(intent, connection, BIND_AUTO_CREATE)
-            }
-        }
+        onStartService()
     }
 
     override fun onStop() {
         super.onStop()
-        if (isBound.value == true) {
+        onStopService()
+    }
+
+    fun onStartService() {
+        if (!isBound.value!!) {
+            Intent(this, BoundService::class.java).also { intent ->
+                bindService(intent, connection, BIND_AUTO_CREATE)
+            }
+        } else {
+            Toast.makeText(this, "Service is already bound", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun onStopService() {
+        if (isBound.value!!) {
+            service.cancelDownload()
+            service.stopService()
+            //stopService(Intent(this, BoundService::class.java)) // used to stop the service from outside the service
             unbindService(connection)
+            isBound.value = false
+        } else {
+            Toast.makeText(this, "Service is not bound", Toast.LENGTH_SHORT).show()
         }
     }
 }

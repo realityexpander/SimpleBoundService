@@ -29,6 +29,7 @@ class BoundService: Service() {
     fun getProgress(): Flow<Float> {
 
         var progress = 0f
+        isCancelled = false
 
         return flow {
             while (progress <= 1f && !isCancelled) {
@@ -38,4 +39,9 @@ class BoundService: Service() {
             }
         }
     }
+
+    fun stopService() {
+        stopSelf() // always stops the service
+    }
+
 }
