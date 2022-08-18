@@ -6,6 +6,7 @@ import android.os.Binder
 import android.os.IBinder
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 
 class BoundService: Service() {
@@ -15,6 +16,8 @@ class BoundService: Service() {
 
     private var dataString: String? = null
 
+    val messageFlow = MutableStateFlow<String>("")
+
     override fun onBind(intent: Intent?): IBinder? {
         return binder
     }
@@ -23,7 +26,8 @@ class BoundService: Service() {
 
         dataString = intent?.getStringExtra("EXTRA_DATA")
         dataString?.let { str ->
-            println("dataString: $str")
+            println("received dataString: $str")
+            messageFlow.value = str
         }
 
         //return START_NOT_STICKY // if android kills service, dont restart it
@@ -57,18 +61,6 @@ class BoundService: Service() {
 
     fun stopService() {
         stopSelf() // always stops the service
-    }
-
-    fun getMessage(): Flow<String?> {
-        return flow {
-            while(!isCancelled) {
-                if(dataString != null) {
-                    emit(dataString)
-                    dataString = null
-                }
-                delay(100)
-            }
-        }
     }
 
 }

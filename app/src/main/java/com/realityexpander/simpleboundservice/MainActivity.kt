@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.MutableLiveData
 import com.realityexpander.simpleboundservice.ui.theme.SimpleBoundServiceTheme
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
@@ -41,6 +42,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    lateinit var messageJob: Job
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -53,12 +56,13 @@ class MainActivity : ComponentActivity() {
                     val scope = rememberCoroutineScope()
                     val isBound: Boolean by isBound.observeAsState(isBound.value ?: false)
                     var messageText by remember { mutableStateOf("") }
+                    var counter: Int by remember { mutableStateOf(0) }
 
                     LaunchedEffect(key1 = isBound) {
-                        scope.launch {
+                        messageJob = scope.launch {
                             if(isBound) {
-                                service.getMessage().collect {
-                                    it?.let { messageText = it }
+                                service.messageFlow.collect {
+                                    messageText = it
                                 }
                             }
                         }
@@ -136,14 +140,14 @@ class MainActivity : ComponentActivity() {
                         } else {
                             Text(text = "Service is not bound")
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
 
 
                         // Send message to service
                         Button(
                             onClick = {
                                 if (isBound) {
-                                    sendMessageToService("Hello from Activity")
+                                    sendMessageToService("Hello from Activity ${counter++}")
                                 } else {
                                     Toast.makeText(this@MainActivity,
                                         "Service not bound", Toast.LENGTH_SHORT).show()
