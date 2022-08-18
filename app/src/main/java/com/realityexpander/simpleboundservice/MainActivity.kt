@@ -162,7 +162,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         ) {
-                            Text(text = "Send Message")
+                            Text(text = "Send Message or loop")
                         }
 
                         if(messageTextFromService.isNotEmpty()) {
