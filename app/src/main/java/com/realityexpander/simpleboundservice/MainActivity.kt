@@ -200,6 +200,7 @@ class MainActivity : ComponentActivity() {
         if (isBound.value!!) {
             service.cancelDownload()
             service.stopService()
+            messageJob.cancel()
             //stopService(Intent(this, BoundService::class.java)) // used to stop the service from outside the service
             unbindService(connection)
             isBound.value = false

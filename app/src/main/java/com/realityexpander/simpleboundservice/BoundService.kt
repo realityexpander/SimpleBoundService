@@ -27,7 +27,7 @@ class BoundService: Service() {
         dataString = intent?.getStringExtra("EXTRA_DATA")
         dataString?.let { str ->
             println("received dataString: $str")
-            messageFlow.value = str
+            sendMessage(str)
         }
 
         //return START_NOT_STICKY // if android kills service, dont restart it
@@ -61,6 +61,10 @@ class BoundService: Service() {
 
     fun stopService() {
         stopSelf() // always stops the service
+    }
+
+    fun sendMessage(message: String) {
+        messageFlow.value = message
     }
 
 }
