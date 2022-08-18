@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.AlarmClock.EXTRA_MESSAGE
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -51,6 +52,17 @@ class MainActivity : ComponentActivity() {
                     var progress by remember { mutableStateOf(0f) }
                     val scope = rememberCoroutineScope()
                     val isBound: Boolean by isBound.observeAsState(isBound.value ?: false)
+                    var messageText by remember { mutableStateOf("") }
+
+                    LaunchedEffect(key1 = isBound) {
+                        scope.launch {
+                            if(isBound) {
+                                service.getMessage().collect {
+                                    it?.let { messageText = it }
+                                }
+                            }
+                        }
+                    }
 
                     Column(
                         modifier = Modifier.fillMaxSize(),
@@ -89,7 +101,7 @@ class MainActivity : ComponentActivity() {
                             onClick = {
                                 if (isBound) {
                                     service.cancelDownload()
-                                }else {
+                                } else {
                                     Toast.makeText(this@MainActivity,
                                         "Service not bound", Toast.LENGTH_SHORT).show()
                                 }
@@ -124,6 +136,27 @@ class MainActivity : ComponentActivity() {
                         } else {
                             Text(text = "Service is not bound")
                         }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+
+                        // Send message to service
+                        Button(
+                            onClick = {
+                                if (isBound) {
+                                    sendMessageToService("Hello from Activity")
+                                } else {
+                                    Toast.makeText(this@MainActivity,
+                                        "Service not bound", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        ) {
+                            Text(text = "Send Message")
+                        }
+
+                        if(messageText.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(text = messageText)
+                        }
                     }
                 }
             }
@@ -138,6 +171,15 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         onStopService()
+    }
+
+    fun sendMessageToService(message: String) {
+        if (isBound.value!!) {
+            Intent(this, BoundService::class.java).also { intent ->
+                intent.putExtra("EXTRA_DATA", message)
+                startService(intent)
+            }
+        }
     }
 
     fun onStartService() {

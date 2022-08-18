@@ -11,11 +11,26 @@ import kotlinx.coroutines.flow.flow
 class BoundService: Service() {
     private val binder = LocalBinder()
 
-    //@Volatile
     private var isCancelled = false
+
+    private var dataString: String? = null
 
     override fun onBind(intent: Intent?): IBinder? {
         return binder
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+        dataString = intent?.getStringExtra("EXTRA_DATA")
+        dataString?.let { str ->
+            println("dataString: $str")
+        }
+
+        //return START_NOT_STICKY // if android kills service, dont restart it
+        return START_STICKY // if android kills service, start it again & don't send last intent
+        //return START_REDELIVER_INTENT // if android kills service, send last intent to service
+
+        //return super.onStartCommand(intent, flags, startId)
     }
 
     inner class LocalBinder : Binder() {
@@ -42,6 +57,18 @@ class BoundService: Service() {
 
     fun stopService() {
         stopSelf() // always stops the service
+    }
+
+    fun getMessage(): Flow<String?> {
+        return flow {
+            while(!isCancelled) {
+                if(dataString != null) {
+                    emit(dataString)
+                    dataString = null
+                }
+                delay(100)
+            }
+        }
     }
 
 }
