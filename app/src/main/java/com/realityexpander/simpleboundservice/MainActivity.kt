@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
-import android.provider.AlarmClock.EXTRA_MESSAGE
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -55,14 +54,15 @@ class MainActivity : ComponentActivity() {
                     var progress by remember { mutableStateOf(0f) }
                     val scope = rememberCoroutineScope()
                     val isBound: Boolean by isBound.observeAsState(isBound.value ?: false)
-                    var messageText by remember { mutableStateOf("") }
+                    var messageTextFromService by remember { mutableStateOf("") }
+                    var messageTextEntry by remember { mutableStateOf("") }
                     var counter: Int by remember { mutableStateOf(0) }
 
                     LaunchedEffect(key1 = isBound) {
                         messageJob = scope.launch {
                             if(isBound) {
                                 service.messageFlow.collect {
-                                    messageText = it
+                                    messageTextFromService = it
                                 }
                             }
                         }
@@ -143,11 +143,19 @@ class MainActivity : ComponentActivity() {
                         Spacer(modifier = Modifier.height(32.dp))
 
 
+                        // Text entry for message
+                        TextField(
+                            value = messageTextEntry,
+                            onValueChange = {
+                                messageTextEntry = it
+                            }
+                        )
+
                         // Send message to service
                         Button(
                             onClick = {
                                 if (isBound) {
-                                    sendMessageToService("Hello from Activity ${counter++}")
+                                    sendMessageToService("$messageTextEntry ${counter++}")
                                 } else {
                                     Toast.makeText(this@MainActivity,
                                         "Service not bound", Toast.LENGTH_SHORT).show()
@@ -157,9 +165,9 @@ class MainActivity : ComponentActivity() {
                             Text(text = "Send Message")
                         }
 
-                        if(messageText.isNotEmpty()) {
+                        if(messageTextFromService.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(text = messageText)
+                            Text(text = messageTextFromService)
                         }
                     }
                 }
@@ -172,8 +180,13 @@ class MainActivity : ComponentActivity() {
         onStartService()
     }
 
-    override fun onStop() {
-        super.onStop()
+//    override fun onStop() {
+//        super.onStop()
+//        onStopService()
+//    }
+
+    override fun onDestroy() {
+        super.onDestroy()
         onStopService()
     }
 

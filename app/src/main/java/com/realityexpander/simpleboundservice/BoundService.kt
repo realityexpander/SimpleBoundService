@@ -16,6 +16,8 @@ class BoundService: Service() {
 
     private var dataString: String? = null
 
+    @Volatile var c: Int = 0
+
     val messageFlow = MutableStateFlow<String>("")
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -28,6 +30,10 @@ class BoundService: Service() {
         dataString?.let { str ->
             println("received dataString: $str")
             sendMessage(str)
+
+            if(str.contains("loop")) {
+                loopThread()
+            }
         }
 
         //return START_NOT_STICKY // if android kills service, dont restart it
@@ -60,11 +66,24 @@ class BoundService: Service() {
     }
 
     fun stopService() {
+        c = 0
         stopSelf() // always stops the service
     }
 
-    fun sendMessage(message: String) {
+    private fun sendMessage(message: String) {
         messageFlow.value = message
+    }
+
+    private fun loopThread() {
+        isCancelled = false
+        c = 0
+
+        Thread {
+            while (!isCancelled) {
+                Thread.sleep(500)
+                sendMessage("LOOPER ${c++}")
+            }
+        }.start()
     }
 
 }
